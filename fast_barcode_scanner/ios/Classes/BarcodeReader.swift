@@ -84,6 +84,7 @@ class BarcodeReader: NSObject {
 	let textureRegistry: FlutterTextureRegistry
 	var textureId: Int64!
 	var pixelBuffer: CVPixelBuffer?
+	private var isActive = false
 
 	var captureDevice: AVCaptureDevice!
 	var captureSession: AVCaptureSession
@@ -164,6 +165,7 @@ class BarcodeReader: NSObject {
 	func start(fromPause: Bool) throws {
         guard captureDevice != nil else { return }
 
+		isActive = true
 		captureSession.startRunning()
 
 		if !fromPause {
@@ -184,7 +186,8 @@ class BarcodeReader: NSObject {
 
 	func stop(pause: Bool) {
         guard captureDevice != nil else { return }
-        
+
+		isActive = false
 		torchActiveOnStop = captureDevice.isTorchActive
 		captureSession.stopRunning()
 		if !pause {
@@ -251,6 +254,7 @@ extension BarcodeReader: AVCaptureVideoDataOutputSampleBufferDelegate {
 	func captureOutput(_ output: AVCaptureOutput,
                     didOutput sampleBuffer: CMSampleBuffer,
                     from connection: AVCaptureConnection) {
+		guard isActive, textureId != nil else { return }
 		pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
 		textureRegistry.textureFrameAvailable(textureId)
 	}
